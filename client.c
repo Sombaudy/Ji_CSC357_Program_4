@@ -33,19 +33,91 @@ void send_request(int fd)
    char *line = NULL;
    size_t size;
    ssize_t num;
-   char output[100];
+   char output[1024];
 
-   while ((num = getline(&line, &size, stdin)) >= 0)
-   {
+   ssize_t bytes;
+   char copy[1024];
+
+   while ((num = getline(&line, &size, stdin)) >= 0) //sending requests
+   {      
       write(fd, line, num);
 
-      if(recv(fd, &output, sizeof(output), 0) != sizeof(output)) {
-         perror("recv");
-         close(fd);
-         exit(EXIT_FAILURE);
+      char *token;
+      char *head = "HEAD";
+      char *get = "GET";
+      int req_type = 0;
+      token = strtok(line, " \t\n"); //command type
+
+      if(strcmp(token, head) == 0) {
+         //printf("executing head request\n");
+         req_type = 1;
+      } else if(strcmp(token, get) == 0) {
+         //printf("executing get request\n");
+         req_type = 2;
+      } else {
+         //HTTP/1.0 400 Bad Request
+         char err[1024];
+         if(recv(fd, err, sizeof(err), 0) < 0) {
+            perror("recv");
+            close(fd);
+            exit(1);
+         }
+         printf("%s\n", err);
+         //printf("no request\n");
       }
 
-      printf("recieved from server: %s", output);
+      int lines = 0;
+      if(req_type == 1) {
+         lines = 4;
+      } else if (req_type == 2) {
+         char temp[1024];
+         if(recv(fd, &temp, sizeof(temp), 0) != sizeof(temp)){
+            perror("recv");
+            close(fd);
+            exit(1);
+         }
+
+         if(strstr(temp, "Error:") != NULL) {
+            printf("%s\n", temp);
+            close(fd);
+            break;
+         } else {
+            lines = atoi(temp);
+         }
+         //recieve line number from server
+      }
+      //printf("lines determined: %d\n", lines);
+
+      if(req_type >= 1) { //printing header
+         while (lines > 0) {
+            //printf("lines: %d\n", line);
+
+            bytes = recv(fd, &output, sizeof(output), 0);
+            if(bytes != sizeof(output)){
+               perror("recv");
+               close(fd);
+               exit(EXIT_FAILURE);
+            }
+
+            strcpy(copy, output);
+
+            if(strstr(copy, "Error:") != NULL) {
+               printf("%s\n", copy);
+               close(fd);
+               free(line);
+               //break;
+               exit(1);
+            } else {
+               printf("%s\n", copy);
+               lines--;
+            }
+         }
+         //while line != 0, check recv, if error, exit, if not, subtract or add to line.
+      }
+
+      close(fd);
+      //printf("exit loop\n");
+      break;
    }
 
    free(line);
