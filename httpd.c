@@ -42,12 +42,12 @@ void fork_request(char *request, int nfd) {
             perror("send");
             exit(1);
          }
-         printf("no request\n");
+         //printf("no request\n");
          exit(1);
       }
 
       token = strtok(NULL, " \t\n"); //filename
-      printf("filename: %s\n", token);
+      //printf("filename: %s\n", token);
 
       if (strstr(token, "..") != NULL) {
          char err[1024] = "Error: HTTP/1.0 403 Perimission Denied";
@@ -151,7 +151,6 @@ void fork_request(char *request, int nfd) {
 
          if(req_type == 2) {
             //do GET here
-            printf("do GET\n");
             while (fgets(buffer, sizeof(buffer), file) != NULL) {
                //printf("%s", buffer); // Print or process the line as needed
                strcpy(copy, buffer);
@@ -202,8 +201,8 @@ void handle_request(int nfd)
    char copy[100];
    while ((num = getline(&line, &size, network)) >= 0) //recieve request
    {
-      printf("start new loop\n");
-      printf("received from client: %s", line);
+      //printf("start new loop\n");
+      //printf("received from client: %s", line);
 
       strcpy(copy, line);
       //printf("copy: %s", copy);
@@ -219,7 +218,7 @@ void handle_request(int nfd)
       // }
    }
 
-   printf("exited loop\n");
+   //printf("exited loop\n");
    free(line);
    fclose(network);
 }
